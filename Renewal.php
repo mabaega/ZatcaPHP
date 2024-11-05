@@ -4,54 +4,32 @@ require_once("Helpers/ApiHelper.php");
 require_once("Helpers/InvoiceHelper.php");
 require_once("Signer/EInvoiceSigner.php");
 
-// ONBOARDING
-// Set EnvironmentType to CertificateInfo JSON File 
-
-$environmentType = 'NonProduction';
+// CERTIFICATE RENEWAL
 $OTP = '123456'; // for Simulation and Production Get OTP from fatooraPortal 
-$apipath = 'developer-portal';  // Default value
+$certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
 
-switch ($environmentType) {
-    case 'NonProduction':
-        $apipath = 'developer-portal';
-        break;
-    case 'Simulation':
-        $apipath = 'simulation';
-        break;
-    case 'Production':  // Capitalized for consistency
-        $apipath = 'production';
-        break;
-}
+$certInfo["csr"] = "";
+$certInfo["OTP"] = $OTP;
+$certInfo["ccsid_requestID"] = "";
+$certInfo["ccsid_binarySecurityToken"] = "";
+$certInfo["ccsid_secret"] = "";
 
-// Prepare certificate information
-$certInfo = [
-    "environmentType" => $environmentType,  // Corrected the assignment operator
-    "csr" => "",
-    "privateKey" => "",
-    "OTP" => $OTP,
-    "ccsid_requestID" => "",
-    "ccsid_binarySecurityToken" => "",
-    "ccsid_secret" => "",
-    "pcsid_requestID" => "",
-    "pcsid_binarySecurityToken" => "",
-    "pcsid_secret" => "",
-    "lastICV" => "0",
-    "lastInvoiceHash" => "NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ==",
-    "complianceCsidUrl" => "https://gw-fatoora.zatca.gov.sa/e-invoicing/" . $apipath . "/compliance",
-    "complianceChecksUrl" => "https://gw-fatoora.zatca.gov.sa/e-invoicing/" . $apipath . "/compliance/invoices",
-    "productionCsidUrl" => "https://gw-fatoora.zatca.gov.sa/e-invoicing/" . $apipath . "/production/csids",
-    "reportingUrl" => "https://gw-fatoora.zatca.gov.sa/e-invoicing/" . $apipath . "/invoices/reporting/single",
-    "clearanceUrl" => "https://gw-fatoora.zatca.gov.sa/e-invoicing/" . $apipath . "/invoices/clearance/single",
-];
 
-// 1. Generate CSR and PrivateKey
-CsrGenerator::GenerateCsrAndPrivateKey($certInfo);
-ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
+// 1. Generate New CSR for Renewal
+$configPath = 'certificate/config.cnf';
+$privateKeyFile = 'certificate/PrivateKey.pem';
+
+$certInfo["csr"] = CsrGenerator::generateRenewalCsr($privateKeyFile, $configPath);
+echo $certInfo["csr"]."";
+//ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
 // 2. Get Compliance CSID
-$response = ApiHelper::complianceCSID($certInfo);
-$requestType = "Compliance CSID"; 
-$apiUrl = $certInfo["complianceCsidUrl"]; 
+$response = ApiHelper::renewalCSID($certInfo);
+
+echo json_encode($response);    
+
+$requestType = "Renewal CSID"; 
+$apiUrl = $certInfo["productionCsidUrl"]; 
 
 $cleanResponse = ApiHelper::cleanUpJson($response, $requestType, $apiUrl);
 
@@ -61,7 +39,7 @@ if ($jsonDecodedResponse = json_decode($response, true)) {
     $certInfo["ccsid_binarySecurityToken"] = $jsonDecodedResponse["binarySecurityToken"];
     $certInfo["ccsid_secret"] = $jsonDecodedResponse["secret"];
 
-    ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
+    //ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
     echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
     
@@ -69,12 +47,11 @@ if ($jsonDecodedResponse = json_decode($response, true)) {
     echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
 }
 
-
 // 3. Send Sample Documents
 
 echo "\nStep 3: Sending Sample Documents\n";
 
-$certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
+//$certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
 
 $xmlTemplatePath = "Resources/Invoice.xml";
 
@@ -105,10 +82,14 @@ foreach ($documentTypes as $docType) {
     echo "Processing {$description}...\n";
 
     $newDoc = InvoiceHelper::ModifyXml($baseDocument, "{$prefix}-0001", $isSimplified ? "0200000" : "0100000", $typeCode, $icv, $pih, $instructionNote);
-
+    
     $jsonPayload = EInvoiceSigner::GetRequestApi($newDoc, $x509CertificateContent, $privateKey, true);
-
+    
+    // echo "\n\nJson Payload: \n" . stripslashes(json_encode($jsonPayload, JSON_PRETTY_PRINT));
+    
     $response = ApiHelper::complianceChecks($certInfo, $jsonPayload);
+    
+
     $requestType = "Compliance Checks"; 
     $apiUrl = $certInfo["complianceChecksUrl"]; 
 
@@ -156,7 +137,7 @@ if ($jsonDecodedResponse = json_decode($response, true)) {
     $certInfo["pcsid_binarySecurityToken"] = $jsonDecodedResponse["binarySecurityToken"];
     $certInfo["pcsid_secret"] = $jsonDecodedResponse["secret"];
 
-    ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
+    ApiHelper::saveJsonToFile("certificate/certificateInfo1.json", $certInfo);
 
     echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
     

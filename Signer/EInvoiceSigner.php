@@ -61,7 +61,8 @@ class EInvoiceSigner{
         // 3. Canonicalize (C14N) transformed document
         $canonicalXml = $transformedXml->C14N();  // C14N format
         
-        echo $canonicalXml;
+        //echo $canonicalXml;
+        
         // 4. Get byte hash256 from transformed document
         $hash = hash('sha256', $canonicalXml, true);  // result hash SHA-256 in binary data
 

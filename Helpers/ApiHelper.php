@@ -10,13 +10,12 @@ class ApiHelper {
             'csr' => $csr
         ]);
 
-       
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'accept: application/json',
             'accept-language: en',
-            'OTP: $OTP',
+            "OTP: $OTP",
             'Accept-Version: V2',
             'Content-Type: application/json',
         ));
@@ -34,6 +33,48 @@ class ApiHelper {
 
         curl_close($ch);
 
+        return $response;
+    }
+
+    public static function renewalCSID($certInfo) {
+        $csr = $certInfo['csr'];
+        $OTP = $certInfo['OTP'];
+        $url = $certInfo['productionCsidUrl'];
+
+        $id = $certInfo['pcsid_binarySecurityToken'];
+        $secret = $certInfo['pcsid_secret'];
+        
+        $jsonPayload = json_encode([
+            'csr' => $csr
+        ]);
+    
+        $ch = curl_init($url);
+
+        $auth = base64_encode("$id:$secret");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'accept: application/json',
+            'accept-language: en',
+            "OTP: $OTP",
+            'Accept-Version: V2',
+            "Authorization: Basic $auth",
+            'Content-Type: application/json',
+        ));
+        
+        // Use CURLOPT_CUSTOMREQUEST to specify PATCH
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+    
+        $response = curl_exec($ch);
+    
+        if (curl_errno($ch)) {
+            $error_msg = curl_error($ch);
+            curl_close($ch);
+            throw new Exception("cURL error: $error_msg");
+        }
+    
+        curl_close($ch);
+    
         return $response;
     }
 
@@ -82,9 +123,14 @@ class ApiHelper {
         $secret = $certInfo['ccsid_secret'];
         $url = $certInfo["complianceChecksUrl"];
 
+        //echo $certInfo['ccsid_binarySecurityToken'];
+        
         $ch = curl_init($url);
 
         $auth = base64_encode("$id:$secret");
+
+        echo $auth;
+
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'accept: application/json',
@@ -105,6 +151,10 @@ class ApiHelper {
             throw new Exception("cURL error: $error_msg");
         }
 
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        
+        echo "\n$httpCode";
+
         curl_close($ch);
 
         return $response;
@@ -112,9 +162,9 @@ class ApiHelper {
 
     public static function invoiceReporting($certInfo, $jsonPayload) {
 
-        $id = $certInfo['ccsid_binarySecurityToken'];
-        $secret = $certInfo['ccsid_secret'];
-        $url = $certInfo["complianceChecksUrl"];
+        $id = $certInfo['pcsid_binarySecurityToken'];
+        $secret = $certInfo['pcsid_secret'];
+        $url = $certInfo["reportingUrl"];
 
     $ch = curl_init($url);
 
@@ -146,9 +196,9 @@ class ApiHelper {
 }
 
 public static function invoiceClearance($certInfo, $jsonPayload) {
-    $id = $certInfo['ccsid_binarySecurityToken'];
-    $secret = $certInfo['ccsid_secret'];
-    $url = $certInfo["complianceChecksUrl"];
+    $id = $certInfo['pcsid_binarySecurityToken'];
+    $secret = $certInfo['pcsid_secret'];
+    $url = $certInfo["clearanceUrl"];
 
     $ch = curl_init($url);
 
@@ -207,34 +257,27 @@ public static function saveJsonToFile($filePath, $data)
 }
 
 public static function cleanUpJson($apiResponse, $requestType, $apiUrl) {
-    // Decode JSON to associative array
+    // Decode the JSON response to an associative array
     $arrayResponse = json_decode($apiResponse, true);
-    
-    // Check if the removeNulls function exists before declaring it
-    if (!function_exists('removeNulls')) {
-        function removeNulls(&$array) {
-            foreach ($array as $key => $value) {
-                if (is_array($value)) {
-                    removeNulls($array[$key]);
-                }
-                if (is_null($value)) {
-                    unset($array[$key]);
-                }
-            }
-        }
-    }
 
-    // Call the function to remove null values
-    removeNulls($arrayResponse);
+    // Add new fields at the root level
+    $arrayResponse['requestType'] = $requestType;
+    $arrayResponse['apiUrl'] = $apiUrl;
 
-    // Adding new fields at the root level
-    $arrayResponse['requestType'] = $requestType; // Insert new field
-    $arrayResponse['apiUrl'] = $apiUrl; // Insert new field
+    // Remove null values from the array
+    $arrayResponse = array_filter($arrayResponse, function($value) {
+        return $value !== null;
+    });
 
-    // Encode the cleaned array back to JSON
-    return json_encode($arrayResponse, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    // Reorder the array to ensure requestType and apiUrl are at the top
+    $reorderedResponse = array_merge(
+        ['requestType' => $arrayResponse['requestType'], 'apiUrl' => $arrayResponse['apiUrl']],
+        array_diff_key($arrayResponse, ['requestType' => '', 'apiUrl' => ''])
+    );
+
+    // Encode the array back to JSON
+    return stripslashes(json_encode($reorderedResponse, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
-
 
 }
 ?>

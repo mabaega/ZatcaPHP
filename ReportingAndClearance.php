@@ -4,16 +4,13 @@ require_once("Helpers/ApiHelper.php");
 require_once("Helpers/InvoiceHelper.php");
 require_once("Signer/EInvoiceSigner.php");
 
-//function step3SendSampleDocuments() {
-    echo "\nStep 3: Sending Sample Documents\n";
+    echo "\nClearance & Reporting\n";
 
     $certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
-
-    // Menyiapkan proses penandatanganan dan mengambil RequestApi dari xmlFile
     $xmlTemplatePath = "Resources/Invoice.xml";
 
     $privateKey = $certInfo["privateKey"];
-    $x509CertificateContent = base64_decode($certInfo["ccsid_binarySecurityToken"]);
+    $x509CertificateContent = base64_decode($certInfo["pcsid_binarySecurityToken"]);
 
     $baseDocument = new DOMDocument();
     $baseDocument->preserveWhiteSpace = true;
@@ -28,10 +25,8 @@ require_once("Signer/EInvoiceSigner.php");
         ["SIMDN", "381", "Simplified DebitNote", "InstructionNotes for Simplified DebitNote"]
     ];
 
-    $icv = 0;
-    $pih = "NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ==";
-
-    // Kode lainnya
+    $icv = $certInfo["lastICV"];
+    $pih = $certInfo["lastInvoiceHash"];
 
 foreach ($documentTypes as $docType) {
     list($prefix, $typeCode, $description, $instructionNote) = $docType;
@@ -44,9 +39,19 @@ foreach ($documentTypes as $docType) {
 
     $jsonPayload = EInvoiceSigner::GetRequestApi($newDoc, $x509CertificateContent, $privateKey, true);
 
-    $response = ApiHelper::complianceChecks($certInfo, $jsonPayload);
-    $requestType = "Compliance Checks"; 
-    $apiUrl = $certInfo["complianceChecksUrl"]; 
+    //echo stripslashes($jsonPayload);
+
+    if($isSimplified){
+        $requestType = "Invoice Reporting"; 
+        $apiUrl = $certInfo["reportingUrl"]; 
+        $response = ApiHelper::invoiceReporting($certInfo, $jsonPayload);
+    }else{
+        $requestType = "Invoice Clearance"; 
+        $apiUrl = $certInfo["clearanceUrl"]; 
+        $response = ApiHelper::invoiceClearance($certInfo, $jsonPayload);
+    }
+    
+    //echo $response;
 
     $cleanResponse = ApiHelper::cleanUpJson($response, $requestType, $apiUrl);
 
@@ -68,8 +73,22 @@ foreach ($documentTypes as $docType) {
 
     if (strpos($status, "REPORTED") !== false || strpos($status, "CLEARED") !== false) {
         $jsonPayload = json_decode($jsonPayload, true);
-        $pih = $jsonPayload["invoiceHash"];
+        $certInfo["lastICV"] = $icv;
+
+        if($isSimplified){
+            $pih = $jsonPayload["invoiceHash"];
+            $certInfo["lastInvoiceHash"]=$pih;
+
+        }else{
+
+            list($invoiceHash, $base64QRCode) = InvoiceHelper::ExtractInvoiceHashAndBase64QrCode($jsonDecodedResponse["clearedInvoice"]);
+            $pih = $invoiceHash ;
+        }
+        
+        ApiHelper::saveJsonToFile( "certificate/certificateInfo.json", $certInfo);
+
         echo "\n{$description} processed successfully\n\n";
+
     } else {
         echo "Failed to process {$description}: status is {$status}\n";
         return false;

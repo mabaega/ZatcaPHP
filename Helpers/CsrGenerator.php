@@ -1,34 +1,33 @@
 <?php 
-require_once(dirname(__FILE__) ."\ApiHelper.php");
 
 class CsrGenerator{
 
     //Generate CSR and Private Key
-    public static function GenerateCsrAndPrivateKey(&$certInfo) // Pass by reference
-{
-    // 1. Generate CSR & Private Key
-    $configFilePath = 'certificate/csr.config';
-    $configPath = 'certificate/config.cnf';
-    $privateKeyFile = 'certificate/PrivateKey.pem';
-    $csrFile = 'certificate/taxpayer.csr';
-    //$publicKeyFile = 'certificate/PublicKey.pem';
+    public static function GenerateCsrAndPrivateKey($certInfo) 
+    {
+        // 1. Generate CSR & Private Key
+        $configFilePath = 'certificate/csr.config';
+        $configPath = 'certificate/config.cnf';
+        $privateKeyFile = 'certificate/PrivateKey.pem';
+        $csrFile = 'certificate/taxpayer.csr';
 
-    // 1.1 Read data from csr.config
-    $data = Self::readConfigFile($configFilePath);
-    
-    // 1.2 Generate Config.cnf
-    file_put_contents($configPath, Self::generateCnfContent($data, $certInfo['environmentType']));
-    echo "\n\nConfig file generated successfully!";
+        // // 1.1 Read data from csr.config
+        $data = Self::readConfigFile($configFilePath);
+        
+        // 1.2 Generate Config.cnf
+        file_put_contents($configPath, Self::generateCnfContent($data, $certInfo['environmentType']));
+        echo "\n\nConfig file generated successfully!";
 
-    // 1.3 Execute functions
-    Self::generateEcPrivateKey($privateKeyFile);
-    $certInfo['csr'] = Self::generateCsr($privateKeyFile, $configPath, $csrFile);
-    //Self::generatePublicKey($privateKeyFile, $publicKeyFile);
-    $certInfo['privateKey'] = Self::cleanPrivateKey($privateKeyFile);  // Clean up the private key after it's used by OpenSSL
+        // 1.3 Execute functions
+        Self::generateEcPrivateKey($privateKeyFile);
+        $certInfo['csr'] = Self::generateCsr($privateKeyFile, $configPath, $csrFile);
 
-    // Output success message
-    echo "\n\nPrivate Key (cleaned), CSR (Base64), and Public Key generated successfully.";
-}
+        $certInfo['privateKey'] = Self::cleanPrivateKey($privateKeyFile); 
+
+        // Output success message
+        echo "\n\nPrivate Key (cleaned), CSR (Base64), and Public Key generated successfully.";
+        return $certInfo;
+    }
 
 
     // Function to read the configuration file and return data as an associative array
@@ -130,16 +129,16 @@ class CsrGenerator{
 
         // req_ext Section
         $cnfContent .= "\n[req_ext]\n";
-        $cnfContent .= "certificateTemplateName = ASN1:PRINTABLESTRING:" . $asnTemplate ."\n"; // *****check EnvironmentType for this value****
+        $cnfContent .= "certificateTemplateName = ASN1:PRINTABLESTRING:" . $asnTemplate ."\n"; 
         $cnfContent .= "subjectAltName = dirName:alt_names\n";
 
         // alt_names Section
         $cnfContent .= "\n[alt_names]\n";
-        $cnfContent .= "SN=" . htmlspecialchars($data['csr']['serial_number']) . "\n";  // Use htmlspecialchars for safety
-        $cnfContent .= "UID=" . htmlspecialchars($data['csr']['organization_identifier']) . "\n";  // Use htmlspecialchars for safety
-        $cnfContent .= "title=" . htmlspecialchars($data['csr']['invoice_type']) . "\n";  // Use htmlspecialchars for safety
-        $cnfContent .= "registeredAddress=" . htmlspecialchars($data['csr']['location_address']) . "\n";  // Use htmlspecialchars for safety
-        $cnfContent .= "businessCategory=" . htmlspecialchars($data['csr']['industry_business_category']) . "\n";  // Use htmlspecialchars for safety
+        $cnfContent .= "SN=" . htmlspecialchars($data['csr']['serial_number']) . "\n";  
+        $cnfContent .= "UID=" . htmlspecialchars($data['csr']['organization_identifier']) . "\n";  
+        $cnfContent .= "title=" . htmlspecialchars($data['csr']['invoice_type']) . "\n";  
+        $cnfContent .= "registeredAddress=" . htmlspecialchars($data['csr']['location_address']) . "\n"; 
+        $cnfContent .= "businessCategory=" . htmlspecialchars($data['csr']['industry_business_category']) . "\n";
 
         return $cnfContent;
     }
@@ -148,7 +147,7 @@ class CsrGenerator{
     private static function generateEcPrivateKey($outputFilePath) {
         $cmd = "openssl ecparam -name secp256k1 -genkey -noout -out " . escapeshellarg($outputFilePath);
         exec($cmd, $output, $returnVar);
-        
+        echo($cmd);
         if ($returnVar !== 0) {
             die("Error generating EC private key: " . implode("\n", $output));
         }
@@ -159,7 +158,7 @@ class CsrGenerator{
         $cmd = "openssl req -new -sha256 -key " . escapeshellarg($privateKeyFilePath) . 
             " -config " . escapeshellarg($configPath) . 
             " -out " . escapeshellarg($csrOutputFilePath);
-        
+            echo($cmd);
         exec($cmd, $output, $returnVar);
         
         if ($returnVar !== 0) {
@@ -175,26 +174,50 @@ class CsrGenerator{
         return $csrContent;
     }
 
-    // Generate Public Key
-    /* private static function generatePublicKey($privateKeyFilePath, $publicKeyFilePath) {
-        $cmd = "openssl ec -in " . escapeshellarg($privateKeyFilePath) . 
-            " -pubout -conv_form compressed -out " . escapeshellarg($publicKeyFilePath);
-        
-        exec($cmd, $output, $returnVar);
-        
-        if ($returnVar !== 0) {
-            die("Error generating public key: " . implode("\n", $output));
-        }
-    }
-    */
-
     // Clean up the private key for output (after CSR generation)
     private static function cleanPrivateKey($privateKeyFilePath) {
         $privateKeyContent = file_get_contents($privateKeyFilePath);
-        $cleanedKey = preg_replace('/-+BEGIN[^-]+-+|-+END[^-]+-+/', '', $privateKeyContent);  // Remove header/footer
-        $cleanedKey = str_replace(["\r", "\n"], '', $cleanedKey);  // Remove newlines
-        file_put_contents($privateKeyFilePath, $cleanedKey);  // Overwrite with cleaned key
+        $cleanedKey = preg_replace('/-+BEGIN[^-]+-+|-+END[^-]+-+/', '', $privateKeyContent);  
+        $cleanedKey = str_replace(["\r", "\n"], '', $cleanedKey);  
+        file_put_contents($privateKeyFilePath, $cleanedKey);  
         return $cleanedKey;
+    }
+
+    // Generate CSR
+    public static function generateRenewalCsr($privateKeyFile, $configPath, ) {
+        $tmpPrivateKeyFilePath = "certificate\TmpPrivateKey.pem";
+        $csrOutputFilePath = "certificate\TmpTaxPayer.csr";
+
+        $cleanedKey = file_get_contents($privateKeyFile);
+
+        // Define the header and footer for the private key
+        $header = "-----BEGIN PRIVATE KEY-----\n";
+        $footer = "-----END PRIVATE KEY-----\n";
+    
+        // Format the cleaned key into lines of 64 characters
+        $formattedKey = wordwrap($cleanedKey, 64, "\n", true);
+    
+        // Combine the header, formatted key, and footer
+        $fullKey = $header . $formattedKey . "\n" . $footer;
+    
+        // Save the full key back to the file
+        file_put_contents($tmpPrivateKeyFilePath, $fullKey);
+
+        $cmd = "openssl req -new -sha256 -key " . escapeshellarg($tmpPrivateKeyFilePath) . 
+            " -config " . escapeshellarg($configPath) . 
+            " -out " . escapeshellarg($csrOutputFilePath);
+            echo($cmd);
+        exec($cmd, $output, $returnVar);
+        
+        if ($returnVar !== 0) {
+            die("Error generating CSR: " . implode("\n", $output));
+        }
+
+        // Read the CSR content and encode it in Base64
+        $csrContent = file_get_contents($csrOutputFilePath);
+        $csrContent = base64_encode($csrContent);
+
+        return $csrContent;
     }
 }
 

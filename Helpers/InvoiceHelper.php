@@ -23,7 +23,7 @@ class InvoiceHelper {
         $xpath->registerNamespace("cac", "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
 
         // Generate a new GUID for the UUID
-        $guidString = strtoupper(bin2hex(random_bytes(16))); // generating a GUID equivalent
+        $guidString = Self::generateUUIDv4(); // generating a GUID equivalent
 
         // Modify the ID node
         $idNode = $xpath->query("//cbc:ID")->item(0);
@@ -81,5 +81,52 @@ class InvoiceHelper {
 
         return $newDoc;
     }
+
+    private static function generateUUIDv4() {
+        $data = random_bytes(16); 
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // Set version to 0100 
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // Set bits 6-7 to 10 
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4)); 
+    }
+
+    public static function ExtractInvoiceHashAndBase64QrCode($xmlInput) {
+        
+        if (is_string($xmlInput)) {
+            $decodedXml = base64_decode($xmlInput);
+            if ($decodedXml === false) {
+                throw new InvalidArgumentException("Invalid Base64 string provided.");
+            }
+            $xmlInput = $decodedXml;
+        } elseif (!($xmlInput instanceof DOMDocument)) {
+            throw new InvalidArgumentException("Input must be a string or DOMDocument.");
+        }
+        
+        // Load XML into DOMDocument
+        $doc = new DOMDocument();
+        $doc->preserveWhiteSpace = true;
+        if (is_string($xmlInput)) {
+            $doc->loadXML($xmlInput);
+        } else {
+            $doc = $xmlInput; // Assume it's already a DOMDocument object
+        }
+
+        // Initialize DOMXPath with namespaces
+        $xpath = new DOMXPath($doc);
+        $xpath->registerNamespace('ext', "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2");
+        $xpath->registerNamespace('ds', "http://www.w3.org/2000/09/xmldsig#");
+        $xpath->registerNamespace('cbc', "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2");
+        $xpath->registerNamespace('cac', "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2");
+
+        // Extract invoiceHash
+        $invoiceHashNode = $xpath->query("//ds:Reference[@Id='invoiceSignedData']/ds:DigestValue")->item(0);
+        $invoiceHash = $invoiceHashNode ? $invoiceHashNode->nodeValue : null;
+
+        // Extract base64QRCode
+        $base64QrCodeNode = $xpath->query("//cac:AdditionalDocumentReference[cbc:ID='QR']/cac:Attachment/cbc:EmbeddedDocumentBinaryObject")->item(0);
+        $base64QRCode = $base64QrCodeNode ? $base64QrCodeNode->nodeValue : null;
+
+        return [$invoiceHash, $base64QRCode];
+    }
+
 }
 ?>

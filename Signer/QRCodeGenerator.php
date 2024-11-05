@@ -25,10 +25,10 @@ class QRCodeGenerator
             $hexDump = unpack('H*', $binaryData)[1];
 
             // Cetak hex dump agar bisa dibandingkan
-            echo "Hex Dump QR Code PHP:\n";
+           /*  echo "Hex Dump QR Code PHP:\n";
             echo chunk_split($hexDump, 2, ' ');
             
-            echo "\nGenerated Base64QRCode:\n". $base64QrCode;
+            echo "\nGenerated Base64QRCode:\n". $base64QrCode; */
 
             return $base64QrCode;
         } catch (Exception $exception) {
@@ -73,7 +73,7 @@ class QRCodeGenerator
     {
         $data = '';
         foreach ($invoiceDetails as $key => $value) {
-            echo "Key: " . $key . ", Value: " . $value . "\n";
+            // echo "Key: " . $key . ", Value: " . $value . "\n";
             $data .= self::writeTlv($key, $value);
         }
         return base64_encode($data);
