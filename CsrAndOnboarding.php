@@ -4,11 +4,24 @@ require_once("Helpers/ApiHelper.php");
 require_once("Helpers/InvoiceHelper.php");
 require_once("Signer/EInvoiceSigner.php");
 
-// ONBOARDING
+echo "\n\nPHP DEVICE ONBOARDING\n\n";
 
 // Set EnvironmentType to CertificateInfo JSON File 
 
-$environmentType = 'NonProduction';
+$config = [
+    "csr.common.name" => "TST-886431145-399999999900003",
+    "csr.serial.number" => "1-TST|2-TST|3-ed22f1d8-e6a2-1118-9b58-d9a8f11e445f",
+    "csr.organization.identifier" => "399999999900003",
+    "csr.organization.unit.name" => "Riyadh Branch",
+    "csr.organization.name" => "Maximum Speed Tech Supply LTD",
+    "csr.country.name" => "SA",
+    "csr.invoice.type" => "1100",
+    "csr.location.address" => "RRRD2929",
+    "csr.industry.business.category" => "Supply activities"
+];
+
+$environmentType = "NonProduction";
+
 $OTP = '123456'; // for Simulation and Production Get OTP from fatoora Portal 
 
 $apipath = 'developer-portal';  // Default value
@@ -46,11 +59,21 @@ $certInfo = [
     "clearanceUrl" => "https://gw-fatoora.zatca.gov.sa/e-invoicing/" . $apipath . "/invoices/clearance/single",
 ];
 
-// 1. Generate CSR and PrivateKey
-$certInfo = CsrGenerator::GenerateCsrAndPrivateKey($certInfo);
+echo "\nStep 1. Generate CSR and PrivateKey\n";
+//$certInfo = CsrGenerator::GenerateCsrAndPrivateKey($certInfo);
+$csrGen = new CsrGenerator($config, $environmentType);
+list($privateKeyContent, $csrBase64) = $csrGen->generateCsr();
+$certInfo["privateKey"] = $privateKeyContent;
+$certInfo["csr"] = $csrBase64;
+
+echo "Private Key (without header and footer):\n";
+echo $privateKeyContent . "\n";
+echo "Base64 Encoded CSR:\n";
+echo $csrBase64 . "\n";
+
 ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
-// 2. Get Compliance CSID
+echo "\n\nStep 2. Get Compliance CSID";
 $response = ApiHelper::complianceCSID($certInfo);
 $requestType = "Compliance CSID"; 
 $apiUrl = $certInfo["complianceCsidUrl"]; 
@@ -65,15 +88,15 @@ if ($jsonDecodedResponse = json_decode($response, true)) {
 
     ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
-    echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
+    echo "\nCompliance CSID Server Response: \n" . $cleanResponse;
     
 } else {
-    echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
+    echo "\nCompliance CSID Server Response: \n" . $cleanResponse;
 }
 
 // 3. Send Sample Documents
 
-echo "\nStep 3: Sending Sample Documents\n";
+echo "\n\nStep 3: Sending Sample Documents\n";
 
 $certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
 
@@ -103,7 +126,7 @@ foreach ($documentTypes as $docType) {
     $icv++;
     $isSimplified = strpos($prefix, "SIM") === 0;
 
-    echo "Processing {$description}...\n";
+    echo "{$icv} - Processing {$description}...\n";
 
     $newDoc = InvoiceHelper::ModifyXml($baseDocument, "{$prefix}-0001", $isSimplified ? "0200000" : "0100000", $typeCode, $icv, $pih, $instructionNote);
 
@@ -118,9 +141,9 @@ foreach ($documentTypes as $docType) {
     $jsonDecodedResponse = json_decode($response, true);
 
     if ($jsonDecodedResponse) {
-        echo "\n\ncomplianceChecks Server Response: \n" . $cleanResponse;
+        echo "\ncomplianceChecks Server Response: \n" . $cleanResponse;
     } else {
-        echo "\n\nInvalid JSON Response: \n" . $response;
+        echo "\nInvalid JSON Response: \n" . $response;
         return false;
     }
 
@@ -143,7 +166,7 @@ foreach ($documentTypes as $docType) {
 }
 
 
-// 4. Get Production CSID
+echo "\n\nStep 4. Get Production CSID";
 
 $response = ApiHelper::productionCSID($certInfo);
 $requestType = "Production CSID"; 
@@ -159,10 +182,10 @@ if ($jsonDecodedResponse = json_decode($response, true)) {
 
     ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
-    echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
+    echo "\n\nPproduction CSID Server Response: \n" . $cleanResponse;
     
 } else {
-    echo "\n\ncomplianceCSID Server Response: \n" . $cleanResponse;
+    echo "\n\nProduction CSID Server Response: \n" . $cleanResponse;
 }
 
 ?>

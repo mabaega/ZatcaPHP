@@ -129,8 +129,6 @@ class ApiHelper {
 
         $auth = base64_encode("$id:$secret");
 
-        echo $auth;
-
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'accept: application/json',
@@ -153,7 +151,7 @@ class ApiHelper {
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         
-        echo "\n$httpCode";
+        //echo "\n$httpCode";
 
         curl_close($ch);
 
