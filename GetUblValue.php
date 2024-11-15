@@ -3,8 +3,8 @@
 echo "SIMPLE UBL VALIDATOR\n\n";
 
 // Load the XML file
-//$xmlFile = "C:\zatca-einvoicing-sdk-238-R3.3.6\Data\Samples\Simplified\Invoice\Simplified_Invoice.xml"; // Replace with your XML file path
-$xmlFile = "php.xml"; // Replace with your XML file path
+$xmlFile = "C:\zatca-einvoicing-sdk-238-R3.3.6\Data\Samples\Simplified\Invoice\Nominal_supply_invoice.xml"; // Replace with your XML file path
+//$xmlFile = 'c:\tmp\101.xml'; // Replace with your XML file path
 $dom = new DOMDocument();
 $dom->preserveWhiteSpace = true;
 
@@ -209,6 +209,7 @@ echo "\nSIGNED PROPERTIES HASH TEST";
         // Mengembalikan kunci publik dalam format PEM
         $publicKeyDetails = openssl_pkey_get_details($publicKey);
         //openssl_free_key($publicKey); // Membersihkan kunci dari memori
+        echo $publicKeyDetails['key'];
         return $publicKeyDetails['key'];
     }
     
@@ -222,7 +223,6 @@ echo "\nSIGNED PROPERTIES HASH TEST";
         if ($publicKey === false) {
             throw new Exception("Invalid public key.");
         }
-    
         // Verify the signature using the original data hash
         $isValid = openssl_verify($hashToVerify, $signature, $publicKey, OPENSSL_ALGO_SHA256);
     

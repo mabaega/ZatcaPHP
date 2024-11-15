@@ -5,12 +5,12 @@ $config = [
     "csr.common.name" => "TST-886431145-399999999900003",
     "csr.serial.number" => "1-TST|2-TST|3-ed22f1d8-e6a2-1118-9b58-d9a8f11e445f",
     "csr.organization.identifier" => "399999999900003",
-    "csr.organization.unit.name" => "Riyadh Branch",
-    "csr.organization.name" => "Maximum Speed Tech Supply LTD",
+    "csr.organization.unit.name" => "فرع الرياض",
+    "csr.organization.name" => "شركة توريد التكنولوجيا بأقصى سرعة المحدودة",
     "csr.country.name" => "SA",
     "csr.invoice.type" => "1100",
     "csr.location.address" => "RRRD2929",
-    "csr.industry.business.category" => "Supply activities"
+    "csr.industry.business.category" => "أنشطة توريدات"
 ];
 
 $environmentType = "NonProduction";
@@ -57,6 +57,7 @@ if ($response === false) {
     echo "cURL error: " . curl_error($ch);
 } elseif ($httpCode !== 200) {
     echo "Error: Received HTTP code " . $httpCode . "\n";
+    echo "Error: Received HTTP code " . $response . "\n";
 } else {
     echo "\n\nServer Response: \n" . json_encode(json_decode($response), JSON_PRETTY_PRINT);
 }

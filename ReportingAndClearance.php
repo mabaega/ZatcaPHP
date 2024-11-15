@@ -39,9 +39,10 @@ foreach ($documentTypes as $docType) {
 
     $jsonPayload = EInvoiceSigner::GetRequestApi($newDoc, $x509CertificateContent, $privateKey, true);
 
-    //echo stripslashes($jsonPayload);
+    
 
     if($isSimplified){
+        echo stripslashes($jsonPayload);
         $requestType = "Invoice Reporting"; 
         $apiUrl = $certInfo["reportingUrl"]; 
         $response = ApiHelper::invoiceReporting($certInfo, $jsonPayload);
@@ -95,8 +96,5 @@ foreach ($documentTypes as $docType) {
     }
        usleep(200 * 1000);  // 200 ms delay
 }
-
-    //return true;
-//}
 
 ?>

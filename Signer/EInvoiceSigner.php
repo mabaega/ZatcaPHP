@@ -101,6 +101,8 @@ class EInvoiceSigner{
         $hashBytes = hash('sha256', $x509CertificateContent, true);
         $hashHex = bin2hex($hashBytes);
         $publicKeyHashing = base64_encode($hashHex);
+        
+        echo'publicKeyHashing'. $publicKeyHashing ;
 
         // Parse the X.509 certificate
         $parsedCertificate = openssl_x509_read("-----BEGIN CERTIFICATE-----\n" . 

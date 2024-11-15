@@ -116,18 +116,6 @@ class QRCodeGenerator
         return $result;
     }
 
-    private static function xwriteTlv($tag, $value)
-    {
-        if ($value === null) {
-            throw new Exception("[Error] Please provide a value!");
-        }
-
-        $tlv = self::writeTag($tag);
-        $tlv .= self::writeLength(strlen($value));
-        $tlv .= $value;
-        return $tlv;
-    }
-
     private static function writeTlv($tag, $value)
     {
         if ($value === null) {

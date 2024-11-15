@@ -71,7 +71,7 @@ echo $privateKeyContent . "\n";
 echo "Base64 Encoded CSR:\n";
 echo $csrBase64 . "\n";
 
-ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
+//ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
 echo "\n\nStep 2. Get Compliance CSID";
 $response = ApiHelper::complianceCSID($certInfo);
@@ -162,7 +162,7 @@ foreach ($documentTypes as $docType) {
         echo "Failed to process {$description}: status is {$status}\n";
         return false;
     }
-    usleep(200 * 1000);  // 200 ms delay
+    //usleep(200 * 1000);  // 200 ms delay
 }
 
 

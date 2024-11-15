@@ -37,6 +37,7 @@ certificateTemplateName=1.3.6.1.4.1.1311.20.2
 
 [req]
 default_bits = 2048
+req_extensions = v3_req
 prompt = no
 default_md = sha256
 req_extensions = req_ext
@@ -48,15 +49,19 @@ OU={$config['csr.organization.unit.name']}
 O={$config['csr.organization.name']}
 C={$config['csr.country.name']}
 
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment
+
 [req_ext]
 certificateTemplateName = ASN1:PRINTABLESTRING:{$this->asn_template}
 subjectAltName = dirName:alt_names
 
 [alt_names]
 SN={$config['csr.serial.number']}
-UID={$config['csr.organization.identifier']}  # Default from your config
-title={$config['csr.invoice.type']}  # Default from your config
-registeredAddress={$config['csr.location.address']}  # Default from your config
+UID={$config['csr.organization.identifier']}  
+title={$config['csr.invoice.type']} 
+registeredAddress={$config['csr.location.address']} 
 businessCategory={$config['csr.industry.business.category']}
 ";
 
