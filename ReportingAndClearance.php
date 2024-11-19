@@ -34,7 +34,7 @@ foreach ($documentTypes as $docType) {
     $icv++;
     $isSimplified = strpos($prefix, "SIM") === 0;
 
-    echo "Processing {$description}...\n";
+    echo "\nProcessing {$description}...";
 
     $newDoc = InvoiceHelper::ModifyXml($baseDocument, "{$prefix}-0001", $isSimplified ? "0200000" : "0100000", $typeCode, $icv, $pih, $instructionNote);
 
