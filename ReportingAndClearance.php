@@ -4,6 +4,7 @@ require_once("Helpers/ApiHelper.php");
 require_once("Helpers/InvoiceHelper.php");
 require_once("Signer/EInvoiceSigner.php");
 
+    echo "\nRUN THIS CODE AFTER SUCCESSFULLY ONBOARDED\n";
     echo "\nClearance & Reporting\n";
 
     $certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
@@ -40,9 +41,8 @@ foreach ($documentTypes as $docType) {
     $jsonPayload = EInvoiceSigner::GetRequestApi($newDoc, $x509CertificateContent, $privateKey, true);
 
     
-
     if($isSimplified){
-        echo stripslashes($jsonPayload);
+        //echo stripslashes($jsonPayload);
         $requestType = "Invoice Reporting"; 
         $apiUrl = $certInfo["reportingUrl"]; 
         $response = ApiHelper::invoiceReporting($certInfo, $jsonPayload);
