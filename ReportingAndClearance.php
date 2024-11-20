@@ -5,6 +5,7 @@ require_once("Helpers/InvoiceHelper.php");
 require_once("Signer/EInvoiceSigner.php");
 
     echo "\nRUN THIS CODE AFTER SUCCESSFULLY ONBOARDED\n";
+    
     echo "\nClearance & Reporting\n";
 
     $certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");

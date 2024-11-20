@@ -67,7 +67,7 @@ businessCategory={$config['csr.industry.business.category']}
 
 
         // Menyimpan konten ke file config.cnf
-        $filePath = 'config.cnf';
+        $filePath = 'certificate/config.cnf';
         file_put_contents($filePath, $cnfContent);
 
         return $filePath;
@@ -126,6 +126,9 @@ businessCategory={$config['csr.industry.business.category']}
         // Strip header/footer dari private key
         $privateKeyContent = preg_replace('/-+BEGIN[^-]+-+|-+END[^-]+-+/', '', $privateKeyPem);  
         $privateKeyContent = str_replace(["\r", "\n"], '', $privateKeyContent); 
+
+        // Hapus file sementara setelah selesai
+        unlink($configFile);
 
         // Encode CSR dalam Base64
         $csrBase64 = base64_encode($csrPem);

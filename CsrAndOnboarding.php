@@ -66,12 +66,12 @@ list($privateKeyContent, $csrBase64) = $csrGen->generateCsr();
 $certInfo["privateKey"] = $privateKeyContent;
 $certInfo["csr"] = $csrBase64;
 
-echo "Private Key (without header and footer):\n";
+echo "\nPrivate Key (without header and footer):\n";
 echo $privateKeyContent . "\n";
-echo "Base64 Encoded CSR:\n";
+echo "\nBase64 Encoded CSR:\n";
 echo $csrBase64 . "\n";
 
-//ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
+ApiHelper::saveJsonToFile("certificate/certificateInfo.json", $certInfo);
 
 echo "\n\nStep 2. Get Compliance CSID";
 $response = ApiHelper::complianceCSID($certInfo);
