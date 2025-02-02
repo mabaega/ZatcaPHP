@@ -12,6 +12,32 @@ class InvoiceHelper {
         return false;
     }
 
+    public static function updateCompanyIDInXmlTemplate($xmlTemplatePath, $organizationIdentifier) {
+        // Baca template XML
+        $xmlContent = file_get_contents($xmlTemplatePath);
+    
+        // Load the XML content into DOMDocument
+        $dom = new DOMDocument();
+        $dom->loadXML($xmlContent);
+    
+        // Create an XPath object
+        $xpath = new DOMXPath($dom);
+    
+        // Register the namespace for XPath queries
+        $xpath->registerNamespace('cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
+    
+        // Access and modify the cbc:CompanyID element directly
+        $companyIDNode = $xpath->evaluate('/*/cac:AccountingSupplierParty/cac:Party/cac:PartyTaxScheme/cbc:CompanyID')->item(0);
+        if ($companyIDNode) {
+            $companyIDNode->nodeValue = $organizationIdentifier;
+        }
+    
+        // Save the modified XML content
+        $modifiedXmlContent = $dom->saveXML();
+        file_put_contents($xmlTemplatePath, $modifiedXmlContent);
+    }
+
+
     public static function ModifyXml($xml, $id, $invoiceTypeCodename, $invoiceTypeCodeValue, $icv, $pih, $instructionNote)
     {
         // Clone the document to keep the original intact

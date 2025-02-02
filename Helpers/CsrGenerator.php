@@ -33,7 +33,7 @@ class CsrGenerator
         $cnfContent = "
 oid_section = OIDs
 [OIDs]
-certificateTemplateName=1.3.6.1.4.1.1311.20.2
+certificateTemplateName=1.3.6.1.4.1.311.20.2
 
 [req]
 default_bits = 2048

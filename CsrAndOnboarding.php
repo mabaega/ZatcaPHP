@@ -38,6 +38,13 @@ switch ($environmentType) {
         break;
 }
 
+// Modifikasi nilai csr.organization.identifier berdasarkan environmentType
+if ($environmentType === "NonProduction") { $config["csr.organization.identifier"] = "399999999900003";}
+
+// Modifikasi Template Invoice XML
+$xmlTemplatePath = "Resources/Invoice.xml";
+InvoiceHelper::updateCompanyIDInXmlTemplate($xmlTemplatePath, $config["csr.organization.identifier"]);
+
 // Prepare certificate information
 $certInfo = [
     "environmentType" => $environmentType,  
@@ -100,14 +107,13 @@ echo "\n\nStep 3: Sending Sample Documents\n";
 
 $certInfo = ApiHelper::loadJsonFromFile("certificate/certificateInfo.json");
 
-$xmlTemplatePath = "Resources/Invoice.xml";
-
 $privateKey = $certInfo["privateKey"];
 $x509CertificateContent = base64_decode($certInfo["ccsid_binarySecurityToken"]);
 
 $baseDocument = new DOMDocument();
 $baseDocument->preserveWhiteSpace = true;
 $baseDocument->load($xmlTemplatePath);
+
 
 $documentTypes = [
     ["STDSI", "388", "Standard Invoice",""],
